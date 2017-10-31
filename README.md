@@ -4,9 +4,9 @@ An IMAP client library in Go.
 
 So far it only implements a subset of IMAP commands, but it's been enough for simple email retrieving jobs.
 
-**IDLE and status change notification are supported.**
+**IDLE and status change callback are supported.**
 
-[GoDoc](https://godoc.org/github.com/wxdao/go-imap)
+[GoDoc](https://godoc.org/github.com/wxdao/go-imap/imap)
 
 ## Example
 
@@ -19,7 +19,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/wxdao/go-imap"
+	"github.com/wxdao/go-imap/imap"
 )
 
 func main() {
@@ -44,20 +44,21 @@ func main() {
 
 loop:
 	for {
-		go client.Idle()
-
-		select {
-		case <-updated:
-			client.Done()
-			seqs, err := client.Search("UNSEEN")
-			if err != nil {
-				panic(err)
-			}
+		seqs, err := client.Search("UNSEEN")
+		if err != nil {
+			panic(err)
+		}
+		if len(seqs) > 0 {
 			data, err := client.FetchRFC822(seqs)
 			if err != nil {
 				panic(err)
 			}
 			go handleNewEmails(data)
+		}
+		go client.Idle()
+		select {
+		case <-updated:
+			client.Done()
 		case <-time.After(time.Minute * 10):
 			client.Done()
 		case <-interrupted:
