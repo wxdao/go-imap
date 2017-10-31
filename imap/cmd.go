@@ -244,7 +244,11 @@ func (c *Client) Search(criteria string) (seqs []int, err error) {
 			continue
 		}
 		for _, seqStr := range lineSeqs[1:] {
-			seq, _ := strconv.Atoi(seqStr)
+			seq, err := strconv.Atoi(seqStr)
+			if err != nil {
+				continue
+			}
+			println("---------", seq, seqStr)
 			seqs = append(seqs, seq)
 		}
 	}
