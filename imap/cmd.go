@@ -252,7 +252,7 @@ func (c *Client) Search(criteria string) (seqs []int, err error) {
 }
 
 // FetchRFC822 performs FETCH command to fetch RFC822 data.
-func (c *Client) FetchRFC822(seqs []int) (data map[int][]byte, err error) {
+func (c *Client) FetchRFC822(seqs []int, peek bool) (data map[int][]byte, err error) {
 	tag, err := c.prepareCmd("FETCH")
 	if err != nil {
 		return
@@ -264,7 +264,11 @@ func (c *Client) FetchRFC822(seqs []int) (data map[int][]byte, err error) {
 		strSeqs = append(strSeqs, strconv.Itoa(seq))
 	}
 
-	err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " RFC822\r\n")
+	if peek {
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY.PEEK[]\r\n")
+	} else {
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY[]\r\n")
+	}
 	if err != nil {
 		return
 	}
@@ -293,7 +297,7 @@ func (c *Client) FetchRFC822(seqs []int) (data map[int][]byte, err error) {
 }
 
 // FetchRFC822Header performs FETCH command to fetch RFC822.HEADER data.
-func (c *Client) FetchRFC822Header(seqs []int) (data map[int][]byte, err error) {
+func (c *Client) FetchRFC822Header(seqs []int, peek bool) (data map[int][]byte, err error) {
 	tag, err := c.prepareCmd("FETCH")
 	if err != nil {
 		return
@@ -305,7 +309,11 @@ func (c *Client) FetchRFC822Header(seqs []int) (data map[int][]byte, err error) 
 		strSeqs = append(strSeqs, strconv.Itoa(seq))
 	}
 
-	err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " RFC822.HEADER\r\n")
+	if peek {
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY.PEEK[HEADER]\r\n")
+	} else {
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY[HEADER]\r\n")
+	}
 	if err != nil {
 		return
 	}
