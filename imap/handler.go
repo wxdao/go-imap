@@ -111,7 +111,7 @@ func (c *Client) listen() {
 			c.latestRep = append(c.latestRep, line)
 		}
 	}
-	c.conn = nil
+	c.conn.Close()
 	if c.rep != nil {
 		c.rep <- &repValue{
 			err:  ErrConnDead,
