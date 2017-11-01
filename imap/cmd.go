@@ -248,7 +248,6 @@ func (c *Client) Search(criteria string) (seqs []int, err error) {
 			if err != nil {
 				continue
 			}
-			println("---------", seq, seqStr)
 			seqs = append(seqs, seq)
 		}
 	}
