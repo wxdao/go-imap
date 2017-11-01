@@ -60,6 +60,11 @@ func (c *Client) writeString(data string) error {
 	return c.write([]byte(data))
 }
 
+// Close closes conn and the client can't be reused.
+func (c *Client) Close() {
+	c.conn.Close()
+}
+
 // GetSelectedMailboxInfo gets current selected mailbox's info.
 func (c *Client) GetSelectedMailboxInfo() (info MailboxInfo) {
 	if c.selectedMailbox != nil {
