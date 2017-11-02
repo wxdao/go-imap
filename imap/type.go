@@ -7,3 +7,10 @@ type MailboxInfo struct {
 	Recent int
 	Flags  []string
 }
+
+// FetchResult contains the response of FETCH command.
+type FetchResult struct {
+	InternalDate string
+	Flags        []string
+	Data         []byte
+}

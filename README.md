@@ -49,11 +49,11 @@ loop:
 			panic(err)
 		}
 		if len(seqs) > 0 {
-			data, err := client.FetchRFC822(seqs)
+			result, err := client.FetchRFC822(seqs)
 			if err != nil {
 				panic(err)
 			}
-			go handleNewEmails(data)
+			go handleNewEmails(result)
 		}
 		go client.Idle()
 		select {

@@ -15,6 +15,8 @@ var (
 )
 
 var regexFetchResult, _ = regexp.Compile(`^(\d+) FETCH.*\r\n$`)
+var regexInternalDate, _ = regexp.Compile(`INTERNALDATE "(.*)"`)
+var regexFlags, _ = regexp.Compile(`FLAGS \((.*)\)`)
 
 func (c *Client) newTag() string {
 	return strconv.Itoa(int(atomic.AddInt32(&c.latestTag, 1)))
@@ -206,10 +208,11 @@ func (c *Client) Select(name string) (info *MailboxInfo, err error) {
 			continue
 		}
 		if strings.HasPrefix(lineString, "FLAGS ") {
-			flagsString := lineString[6 : len(line)-2]
-			flagsString = strings.Replace(flagsString, "(", "", 1)
-			flagsString = strings.Replace(flagsString, ")", "", 1)
-			info.Flags = strings.Split(flagsString, " ")
+			flagsString := regexFlags.FindStringSubmatch(lineString)
+			if len(flagsString) < 2 {
+				continue
+			}
+			info.Flags = strings.Split(flagsString[1], " ")
 			continue
 		}
 	}
@@ -255,7 +258,7 @@ func (c *Client) Search(criteria string) (seqs []int, err error) {
 }
 
 // FetchRFC822 performs FETCH command to fetch RFC822 data.
-func (c *Client) FetchRFC822(seqs []int, peek bool) (data map[int][]byte, err error) {
+func (c *Client) FetchRFC822(seqs []int, peek bool) (result map[int]*FetchResult, err error) {
 	tag, err := c.prepareCmd("FETCH")
 	if err != nil {
 		return
@@ -268,9 +271,9 @@ func (c *Client) FetchRFC822(seqs []int, peek bool) (data map[int][]byte, err er
 	}
 
 	if peek {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY.PEEK[]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY.PEEK[]\r\n")
 	} else {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY[]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY[]\r\n")
 	}
 	if err != nil {
 		return
@@ -285,12 +288,26 @@ func (c *Client) FetchRFC822(seqs []int, peek bool) (data map[int][]byte, err er
 		err = rep.err
 		return
 	}
-	data = make(map[int][]byte)
+	result = make(map[int]*FetchResult)
 	for i := 0; i < len(rep.data); {
 		line := rep.data[i]
 		if submatch := regexFetchResult.FindSubmatch(line); submatch != nil {
 			seq, _ := strconv.Atoi(string(submatch[1]))
-			data[seq] = rep.data[i+1]
+			res := FetchResult{}
+
+			flagsString := regexFlags.FindStringSubmatch(string(line))
+			if len(flagsString) >= 2 {
+				res.Flags = strings.Split(flagsString[1], " ")
+			}
+
+			internalDateString := regexInternalDate.FindStringSubmatch(string(line))
+			if len(internalDateString) >= 2 {
+				res.InternalDate = internalDateString[1]
+			}
+
+			res.Data = rep.data[i+1]
+
+			result[seq] = &res
 			i += 3
 			continue
 		}
@@ -300,7 +317,7 @@ func (c *Client) FetchRFC822(seqs []int, peek bool) (data map[int][]byte, err er
 }
 
 // FetchRFC822Header performs FETCH command to fetch RFC822.HEADER data.
-func (c *Client) FetchRFC822Header(seqs []int, peek bool) (data map[int][]byte, err error) {
+func (c *Client) FetchRFC822Header(seqs []int, peek bool) (result map[int]*FetchResult, err error) {
 	tag, err := c.prepareCmd("FETCH")
 	if err != nil {
 		return
@@ -313,9 +330,9 @@ func (c *Client) FetchRFC822Header(seqs []int, peek bool) (data map[int][]byte, 
 	}
 
 	if peek {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY.PEEK[HEADER]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY.PEEK[HEADER]\r\n")
 	} else {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " BODY[HEADER]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY[HEADER]\r\n")
 	}
 	if err != nil {
 		return
@@ -330,13 +347,27 @@ func (c *Client) FetchRFC822Header(seqs []int, peek bool) (data map[int][]byte, 
 		err = rep.err
 		return
 	}
-	data = make(map[int][]byte)
+	result = make(map[int]*FetchResult)
 
 	for i := 0; i < len(rep.data); {
 		line := rep.data[i]
 		if submatch := regexFetchResult.FindSubmatch(line); submatch != nil {
 			seq, _ := strconv.Atoi(string(submatch[1]))
-			data[seq] = rep.data[i+1]
+			res := FetchResult{}
+
+			flagsString := regexFlags.FindStringSubmatch(string(line))
+			if len(flagsString) >= 2 {
+				res.Flags = strings.Split(flagsString[1], " ")
+			}
+
+			internalDateString := regexInternalDate.FindStringSubmatch(string(line))
+			if len(internalDateString) >= 2 {
+				res.InternalDate = internalDateString[1]
+			}
+
+			res.Data = rep.data[i+1]
+
+			result[seq] = &res
 			i += 2
 			continue
 		}
