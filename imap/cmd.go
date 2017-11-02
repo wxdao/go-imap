@@ -271,9 +271,9 @@ func (c *Client) FetchRFC822(seqs []int, peek bool) (result map[int]*FetchResult
 	}
 
 	if peek {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY.PEEK[]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " (FLAGS INTERNALDATE BODY.PEEK[])\r\n")
 	} else {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY[]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " (FLAGS INTERNALDATE BODY[])\r\n")
 	}
 	if err != nil {
 		return
@@ -330,9 +330,9 @@ func (c *Client) FetchRFC822Header(seqs []int, peek bool) (result map[int]*Fetch
 	}
 
 	if peek {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY.PEEK[HEADER]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " (FLAGS INTERNALDATE BODY.PEEK[HEADER])\r\n")
 	} else {
-		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " FLAGS INTERNALDATE BODY[HEADER]\r\n")
+		err = c.writeString(tag + " FETCH " + strings.Join(strSeqs, ",") + " (FLAGS INTERNALDATE BODY[HEADER])\r\n")
 	}
 	if err != nil {
 		return
